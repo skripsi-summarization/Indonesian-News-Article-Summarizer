@@ -1,6 +1,6 @@
 # Indonesian News Article Summarizer
 
-Aplikasi Streamlit untuk merangkum artikel berita berbahasa Indonesia secara otomatis menggunakan dua model transformer: **mBART** (langsung Bahasa Indonesia) dan **PEGASUS** (dengan terjemahan ke/dari Bahasa Inggris).
+Aplikasi Streamlit untuk merangkum artikel berita berbahasa Indonesia secara otomatis menggunakan dua model transformer: **mBART** dan **PEGASUS**.
 
 ---
 
