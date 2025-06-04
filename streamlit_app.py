@@ -17,38 +17,6 @@ DetectorFactory.seed = 0
 
 st.set_page_config(page_title="Indonesian News Summarizer", layout="wide")
 
-# --- Pilihan Model ---
-model_option = st.selectbox("Pilih Model Summarization:", ("mBART", "PEGASUS"))
-
-
-# --- Load Model dan Tokenizer sesuai pilihan ---
-@st.cache_resource
-def load_mbart():
-    model = MBartForConditionalGeneration.from_pretrained(
-        "skripsi-summarization-1234/mbart-large-50-finetuned-xlsum-summarization"
-    )
-    tokenizer = MBart50TokenizerFast.from_pretrained(
-        "skripsi-summarization-1234/mbart-large-50-finetuned-xlsum-summarization"
-    )
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-    return model, tokenizer, device
-
-
-@st.cache_resource
-def load_pegasus():
-    model = PegasusForConditionalGeneration.from_pretrained(
-        "skripsi-summarization-1234/pegasus-large-finetuned-xlsum-summarization"
-    )
-    tokenizer = PegasusTokenizer.from_pretrained(
-        "skripsi-summarization-1234/pegasus-large-finetuned-xlsum-summarization"
-    )
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-    translator = Translator()
-    return model, tokenizer, device, translator
-
-
 # --- Custom Styles ---
 st.markdown(
     """
@@ -127,13 +95,51 @@ st.markdown(
     """
 <div class="usage-steps">
     <strong>Cara Menggunakan Aplikasi:</strong><br>
-    1️⃣ Masukkan URL artikel berita dari situs berita berbahasa Indonesia.<br>
-    2️⃣ Klik tombol <em>"Tampilkan Artikel"</em> untuk melihat isi lengkap artikel.<br>
-    3️⃣ Klik tombol <em>"Ringkas"</em> untuk mendapatkan hasil ringkasan otomatis.<br>
+    1️⃣ <b>Pilih model summarization</b> yang ingin digunakan pada dropdown di bawah.<br>
+    2️⃣ Masukkan URL artikel berita dari situs berita berbahasa Indonesia.<br>
+    3️⃣ Klik tombol <em>"Tampilkan Artikel"</em> untuk melihat isi lengkap artikel.<br>
+    4️⃣ Klik tombol <em>"Ringkas"</em> untuk mendapatkan hasil ringkasan otomatis.<br>
 </div>
 """,
     unsafe_allow_html=True,
 )
+
+# --- Pilihan Model (letakkan di bawah petunjuk) ---
+model_option = st.selectbox(
+    "Pilih Model Summarization:",
+    ("Pilih model...", "mBART", "PEGASUS"),
+    index=0,
+    help="Pilih model yang ingin digunakan untuk merangkum artikel."
+)
+
+if model_option == "Pilih model...":
+    st.warning("Silakan pilih model terlebih dahulu sebelum melanjutkan.")
+
+# --- Load Model dan Tokenizer sesuai pilihan ---
+@st.cache_resource
+def load_mbart():
+    model = MBartForConditionalGeneration.from_pretrained(
+        "skripsi-summarization-1234/mbart-large-50-finetuned-xlsum-summarization"
+    )
+    tokenizer = MBart50TokenizerFast.from_pretrained(
+        "skripsi-summarization-1234/mbart-large-50-finetuned-xlsum-summarization"
+    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    return model, tokenizer, device
+
+@st.cache_resource
+def load_pegasus():
+    model = PegasusForConditionalGeneration.from_pretrained(
+        "skripsi-summarization-1234/pegasus-large-finetuned-xlsum-summarization"
+    )
+    tokenizer = PegasusTokenizer.from_pretrained(
+        "skripsi-summarization-1234/pegasus-large-finetuned-xlsum-summarization"
+    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    translator = Translator()
+    return model, tokenizer, device, translator
 
 # --- URL Input and Submit ---
 st.markdown("### 🔗 Masukkan URL Berita")
@@ -152,6 +158,8 @@ if submit_url:
         st.error(
             "❌ Format URL tidak valid. Harap masukkan URL artikel berita yang benar."
         )
+    elif model_option == "Pilih model...":
+        st.error("❌ Silakan pilih model terlebih dahulu.")
     else:
         st.markdown(
             "<p style='color:#66bb6a; font-size: 0.9rem;'>✅ URL berhasil dimasukkan. Klik tombol di bawah untuk menampilkan artikel dan menghasilkan ringkasan.</p>",
@@ -166,7 +174,7 @@ with col2:
 
 # --- Show Article ---
 if show_btn:
-    if url:
+    if url and model_option != "Pilih model...":
         with st.spinner("📥 Mengambil artikel dan mendeteksi bahasa..."):
             try:
                 article = Article(url, language="id")
@@ -194,10 +202,21 @@ if "article_text" in st.session_state and st.session_state.article_text:
 
 # --- Summarize Article ---
 if summarize_btn:
-    if "article_text" in st.session_state and st.session_state.article_text:
+    if model_option == "Pilih model...":
+        st.warning("⚠️ Silakan pilih model terlebih dahulu.")
+    elif "article_text" in st.session_state and st.session_state.article_text:
+        # Scroll ke bawah sebelum mulai proses ringkas
+        st.markdown(
+            """
+            <script>
+            window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+            </script>
+            """,
+            unsafe_allow_html=True,
+        )
         try:
             with st.spinner("🔄 Memproses artikel..."):
-                if model_option.startswith("mBART"):
+                if model_option == "mBART":
                     model, tokenizer, device = load_mbart()
                     tokenizer.src_lang = "id_ID"
                     inputs = tokenizer(
@@ -217,7 +236,7 @@ if summarize_btn:
                     id_summary = tokenizer.decode(
                         summary_ids[0], skip_special_tokens=True
                     )
-                else:
+                elif model_option == "PEGASUS":
                     model, tokenizer, device, translator = load_pegasus()
                     en_text = translator.translate(
                         st.session_state.article_text, src="id", dest="en"
