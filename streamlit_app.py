@@ -95,10 +95,10 @@ st.markdown(
     """
 <div class="usage-steps">
     <strong>Cara Menggunakan Aplikasi:</strong><br>
-    1️⃣ <b>Pilih model summarization</b> yang ingin digunakan pada dropdown di bawah.<br>
+    1️⃣ <b>Pilih model summarization</b> yang ingin digunakan.<br>
     2️⃣ Masukkan URL artikel berita dari situs berita berbahasa Indonesia.<br>
-    3️⃣ Klik tombol <em>"Tampilkan Artikel"</em> untuk melihat isi lengkap artikel.<br>
-    4️⃣ Klik tombol <em>"Ringkas"</em> untuk mendapatkan hasil ringkasan otomatis.<br>
+    3️⃣ Klik tombol <b>Tampilkan Artikel</b> untuk melihat isi lengkap artikel.<br>
+    4️⃣ Klik tombol <b>Ringkas</b> untuk mendapatkan hasil ringkasan otomatis.<br>
 </div>
 """,
     unsafe_allow_html=True,
