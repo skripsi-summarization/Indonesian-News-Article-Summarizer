@@ -132,11 +132,9 @@ if submit_url:
         st.error(
             "Format URL tidak valid. Harap masukkan URL artikel berita yang benar."
         )
-    elif model_option == "Pilih model...":
-        st.error("Silakan pilih model terlebih dahulu.")
     else:
         st.markdown(
-            "<p style='color:#66bb6a; font-size: 0.9rem;'>URL berhasil dimasukkan. Klik tombol di bawah untuk menampilkan artikel dan menghasilkan ringkasan.</p>",
+            "<p style='color:#66bb6a; font-size: 0.9rem;'>URL berhasil dimasukkan. Pilih model, lalu klik tombol di bawah untuk menampilkan artikel dan menghasilkan ringkasan.</p>",
             unsafe_allow_html=True,
         )
 
@@ -176,11 +174,19 @@ def load_pegasus():
 
 
 if model_option == "Pilih model...":
-    st.warning("Silakan pilih model terlebih dahulu sebelum melanjutkan.")
+    st.info(
+        "Silakan pilih model sebelum menampilkan artikel atau melakukan ringkasan."
+    )
 
 # --- Show Article ---
 if show_btn:
-    if url and model_option != "Pilih model...":
+    if not url or not valid_url:
+        st.error(
+            "Format URL tidak valid. Harap masukkan URL artikel berita yang benar."
+        )
+    elif model_option == "Pilih model...":
+        st.warning("Silakan pilih model terlebih dahulu.")
+    else:
         with st.spinner("Mengambil artikel dan mendeteksi bahasa..."):
             try:
                 article = Article(url, language="id")
@@ -211,7 +217,6 @@ if summarize_btn:
     if model_option == "Pilih model...":
         st.warning("Silakan pilih model terlebih dahulu.")
     elif "article_text" in st.session_state and st.session_state.article_text:
-        
         st.markdown(
             """
             <script>
