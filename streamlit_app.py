@@ -79,11 +79,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- Header with App Title and Icon ---
+# --- Header ---
 st.markdown(
     """
 <div class="header-container">
-    <h1>📰 Indonesian News Summarizer</h1>
+    <h1>Indonesian News Summarizer</h1>
     <p>Ringkas artikel berita berbahasa Indonesia secara otomatis berdasarkan URL yang Anda masukkan.</p>
 </div>
 """,
@@ -95,27 +95,59 @@ st.markdown(
     """
 <div class="usage-steps">
     <strong>Cara Menggunakan Aplikasi:</strong><br>
-    1️⃣ <b>Pilih model summarization</b> yang ingin digunakan.<br>
-    2️⃣ Masukkan URL artikel berita dari situs berita berbahasa Indonesia.<br>
-    3️⃣ Klik tombol <b>Tampilkan Artikel</b> untuk melihat isi lengkap artikel.<br>
-    4️⃣ Klik tombol <b>Ringkas</b> untuk mendapatkan hasil ringkasan otomatis.<br>
+    1. Masukkan URL artikel berita dari situs berita berbahasa Indonesia.<br>
+    2. Pilih model summarization yang ingin digunakan.<br>
+    3. Klik tombol <b>Tampilkan Artikel</b> untuk melihat isi lengkap artikel.<br>
+    4. Klik tombol <b>Ringkas</b> untuk mendapatkan hasil ringkasan otomatis.<br>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
-# --- Pilihan Model (letakkan di bawah petunjuk) ---
+# --- URL Input and Submit ---
+st.markdown("### Masukkan URL Berita")
+with st.form(key="url_form"):
+    url = st.text_input(
+        "",
+        placeholder="https://www.cnnindonesia.com/...",
+        label_visibility="collapsed",
+    )
+    submit_url = st.form_submit_button("Gunakan URL")
+
+valid_url = re.match(r"https?://[\w\.-]+(?:/[\w\.-]*)*", url or "")
+
+# --- Choose Model ---
 model_option = st.selectbox(
     "Pilih Model Summarization:",
     ("Pilih model...", "mBART", "PEGASUS"),
     index=0,
-    help="Pilih model yang ingin digunakan untuk merangkum artikel."
+    help="Pilih model yang ingin digunakan untuk merangkum artikel.",
+    key="model_select",
+    disabled=False,
+    label_visibility="visible",
 )
 
-if model_option == "Pilih model...":
-    st.warning("Silakan pilih model terlebih dahulu sebelum melanjutkan.")
+if submit_url:
+    if not url or not valid_url:
+        st.error(
+            "Format URL tidak valid. Harap masukkan URL artikel berita yang benar."
+        )
+    elif model_option == "Pilih model...":
+        st.error("Silakan pilih model terlebih dahulu.")
+    else:
+        st.markdown(
+            "<p style='color:#66bb6a; font-size: 0.9rem;'>URL berhasil dimasukkan. Klik tombol di bawah untuk menampilkan artikel dan menghasilkan ringkasan.</p>",
+            unsafe_allow_html=True,
+        )
 
-# --- Load Model dan Tokenizer sesuai pilihan ---
+col1, col2 = st.columns(2)
+with col1:
+    show_btn = st.button("Tampilkan Artikel", use_container_width=True)
+with col2:
+    summarize_btn = st.button("Ringkas", use_container_width=True)
+
+
+# --- Load Model and Tokenizer ---
 @st.cache_resource
 def load_mbart():
     model = MBartForConditionalGeneration.from_pretrained(
@@ -127,6 +159,7 @@ def load_mbart():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     return model, tokenizer, device
+
 
 @st.cache_resource
 def load_pegasus():
@@ -141,41 +174,14 @@ def load_pegasus():
     translator = Translator()
     return model, tokenizer, device, translator
 
-# --- URL Input and Submit ---
-st.markdown("### 🔗 Masukkan URL Berita")
-with st.form(key="url_form"):
-    url = st.text_input(
-        "",
-        placeholder="https://www.cnnindonesia.com/...",
-        label_visibility="collapsed",
-    )
-    submit_url = st.form_submit_button("🔗 Gunakan URL")
 
-valid_url = re.match(r"https?://[\w\.-]+(?:/[\w\.-]*)*", url or "")
-
-if submit_url:
-    if not url or not valid_url:
-        st.error(
-            "❌ Format URL tidak valid. Harap masukkan URL artikel berita yang benar."
-        )
-    elif model_option == "Pilih model...":
-        st.error("❌ Silakan pilih model terlebih dahulu.")
-    else:
-        st.markdown(
-            "<p style='color:#66bb6a; font-size: 0.9rem;'>✅ URL berhasil dimasukkan. Klik tombol di bawah untuk menampilkan artikel dan menghasilkan ringkasan.</p>",
-            unsafe_allow_html=True,
-        )
-
-col1, col2 = st.columns(2)
-with col1:
-    show_btn = st.button("📥 Tampilkan Artikel", use_container_width=True)
-with col2:
-    summarize_btn = st.button("✍️ Ringkas", use_container_width=True)
+if model_option == "Pilih model...":
+    st.warning("Silakan pilih model terlebih dahulu sebelum melanjutkan.")
 
 # --- Show Article ---
 if show_btn:
     if url and model_option != "Pilih model...":
-        with st.spinner("📥 Mengambil artikel dan mendeteksi bahasa..."):
+        with st.spinner("Mengambil artikel dan mendeteksi bahasa..."):
             try:
                 article = Article(url, language="id")
                 article.download()
@@ -184,17 +190,17 @@ if show_btn:
                 if lang != "id":
                     lang_name = Language.get(lang).display_name("id")
                     st.error(
-                        f"❌ Artikel ini terdeteksi dalam bahasa {lang_name}. Aplikasi hanya mendukung ringkasan untuk berita Bahasa Indonesia."
+                        f"Artikel ini terdeteksi dalam bahasa {lang_name}. Aplikasi hanya mendukung ringkasan untuk berita Bahasa Indonesia."
                     )
                     st.session_state.article_text = None
                 else:
                     st.session_state.article_text = article.text
             except Exception as e:
-                st.error("❌ Tidak dapat memuat artikel. Pastikan URL valid.")
+                st.error("Tidak dapat memuat artikel. Pastikan URL valid.")
 
-# --- Re-render Article if Already Shown ---
+# --- Re-render Article ---
 if "article_text" in st.session_state and st.session_state.article_text:
-    st.markdown("### 📄 Artikel Lengkap")
+    st.markdown("### Artikel Lengkap")
     st.markdown(
         f"<div class='scroll-box'>{st.session_state.article_text.replace(chr(10), '<br>')}</div>",
         unsafe_allow_html=True,
@@ -203,9 +209,9 @@ if "article_text" in st.session_state and st.session_state.article_text:
 # --- Summarize Article ---
 if summarize_btn:
     if model_option == "Pilih model...":
-        st.warning("⚠️ Silakan pilih model terlebih dahulu.")
+        st.warning("Silakan pilih model terlebih dahulu.")
     elif "article_text" in st.session_state and st.session_state.article_text:
-        # Scroll ke bawah sebelum mulai proses ringkas
+        
         st.markdown(
             """
             <script>
@@ -215,7 +221,7 @@ if summarize_btn:
             unsafe_allow_html=True,
         )
         try:
-            with st.spinner("🔄 Memproses artikel..."):
+            with st.spinner("Memproses artikel..."):
                 if model_option == "mBART":
                     model, tokenizer, device = load_mbart()
                     tokenizer.src_lang = "id_ID"
@@ -261,14 +267,14 @@ if summarize_btn:
                         en_summary, src="en", dest="id"
                     ).text
 
-            st.success("✅ Ringkasan berhasil dibuat!")
-            st.markdown("### 🔍 Hasil Ringkasan")
+            st.success("Ringkasan berhasil dibuat!")
+            st.markdown("### Hasil Ringkasan")
             st.markdown(
                 f"<div class='summary-box'>{id_summary}</div>",
                 unsafe_allow_html=True,
             )
 
         except Exception as e:
-            st.error(f"❌ Terjadi kesalahan saat merangkum: {str(e)}")
+            st.error(f"Terjadi kesalahan saat merangkum: {str(e)}")
     else:
-        st.warning("⚠️ Silakan tampilkan artikel terlebih dahulu.")
+        st.warning("Silakan tampilkan artikel terlebih dahulu.")
