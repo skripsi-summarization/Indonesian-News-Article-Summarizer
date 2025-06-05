@@ -175,7 +175,7 @@ def load_pegasus():
 
 if model_option == "Pilih model...":
     st.info(
-        "Silakan pilih model sebelum menampilkan artikel atau melakukan ringkasan."
+        "Silakan pilih model sebelum menampilkan artikel dan meringkas."
     )
 
 # --- Show Article ---
