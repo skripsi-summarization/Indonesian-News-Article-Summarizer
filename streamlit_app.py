@@ -119,7 +119,7 @@ valid_url = re.match(r"https?://[\w\.-]+(?:/[\w\.-]*)*", url or "")
 # --- Choose Model ---
 model_option = st.selectbox(
     "Pilih Model Summarization:",
-    ("Pilih model...", "mBART", "PEGASUS"),
+    ("Pilih model...", "mBART-large-50", "PEGASUS-large"),
     index=0,
     help="Pilih model yang ingin digunakan untuk merangkum artikel.",
     key="model_select",
@@ -227,7 +227,7 @@ if summarize_btn:
         )
         try:
             with st.spinner("Memproses artikel..."):
-                if model_option == "mBART":
+                if model_option == "mBART-large-50":
                     model, tokenizer, device = load_mbart()
                     tokenizer.src_lang = "id_ID"
                     inputs = tokenizer(
@@ -247,7 +247,7 @@ if summarize_btn:
                     id_summary = tokenizer.decode(
                         summary_ids[0], skip_special_tokens=True
                     )
-                elif model_option == "PEGASUS":
+                elif model_option == "PEGASUS-large":
                     model, tokenizer, device, translator = load_pegasus()
                     en_text = translator.translate(
                         st.session_state.article_text, src="id", dest="en"
